@@ -2,8 +2,6 @@
 import csv
 from datetime import datetime
 
-from davaleba.davaleba_11 import fieldnames
-
 product_file= "products.csv"
 log_file= "log.txt"
 
