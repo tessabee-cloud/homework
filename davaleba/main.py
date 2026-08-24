@@ -1,217 +1,143 @@
-from sqlalchemy.orm import sessionmaker, joinedload
+from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy import select
-from models import engine, Customer, Order, Product, OrderItem, Base
+from sqlalchemy.orm import Session
+
+from database import engine, Base, get_session
+from models import Trip
+from schemas import TripCreate, TripResponse
+
+
+
 
 Base.metadata.create_all(engine)
 
 
 
 
-Session = sessionmaker(bind=engine)
-session = Session()
-
-
-
-
-customers = [
-    Customer(name="John", email="john@gmail.com"),
-    Customer(name="Anna", email="anna@gmail.com"),
-    Customer(name="Kate", email="kate@gmail.com"),
-    Customer(name="Bob", email="bob@gmail.com"),
-    Customer(name="Patrick", email="patrick@gmail.com")
-]
-
-session.add_all(customers)
-session.commit()
-
-
-
-
-products = [
-    Product(name="Laptop", price=1000),
-    Product(name="Phone", price=700),
-    Product(name="Keyboard", price=80),
-    Product(name="Mouse", price=40),
-    Product(name="Monitor", price=300),
-    Product(name="Headphones", price=120),
-    Product(name="Tablet", price=500),
-    Product(name="Camera", price=900)
-]
-
-session.add_all(products)
-session.commit()
-
-
-
-
-john = session.query(Customer).filter_by(name="John").first()
-anna = session.query(Customer).filter_by(name="Anna").first()
-kate = session.query(Customer).filter_by(name="Kate").first()
-bob = session.query(Customer).filter_by(name="Bob").first()
-patrick = session.query(Customer).filter_by(name="Patrick").first()
-
-order1 = Order(customer=john)
-order2 = Order(customer=john)
-order3 = Order(customer=anna)
-order4 = Order(customer=kate)
-order5 = Order(customer=bob)
-
-session.add_all([
-    order1,
-    order2,
-    order3,
-    order4,
-    order5
-])
-
-session.commit()
-
-
-
-
-laptop = session.query(Product).filter_by(name="Laptop").first()
-phone = session.query(Product).filter_by(name="Phone").first()
-keyboard = session.query(Product).filter_by(name="Keyboard").first()
-mouse = session.query(Product).filter_by(name="Mouse").first()
-monitor = session.query(Product).filter_by(name="Monitor").first()
-headphones = session.query(Product).filter_by(name="Headphones").first()
-tablet = session.query(Product).filter_by(name="Tablet").first()
-camera = session.query(Product).filter_by(name="Camera").first()
-
-
-
-
-order1.items = [
-    OrderItem(product=laptop, quantity=1),
-    OrderItem(product=mouse, quantity=2)
-]
-
-order2.items = [
-    OrderItem(product=phone, quantity=1),
-    OrderItem(product=headphones, quantity=1)
-]
-
-order3.items = [
-    OrderItem(product=keyboard, quantity=1),
-    OrderItem(product=monitor, quantity=1)
-]
-
-order4.items = [
-    OrderItem(product=tablet, quantity=2)
-]
-
-order5.items = [
-    OrderItem(product=camera, quantity=1),
-    OrderItem(product=mouse, quantity=1)
-]
-
-session.commit()
-
-
-
-
-print("\n========== ALL CUSTOMERS ==========")
-
-all_customers = session.query(Customer).all()
-
-for customer in all_customers:
-    print(f"ID: {customer.id}")
-    print(f"Name: {customer.name}")
-    print(f"Email: {customer.email}")
-    print()
-
-
-
-
-print("\n========== JOHN'S ORDERS ==========")
-
-john = (
-    session.query(Customer)
-    .options(joinedload(Customer.orders))
-    .filter(Customer.name == "John")
-    .first()
+app = FastAPI(
+    title="Travel API"
 )
 
-if john:
-    print(f"Customer: {john.name}")
-
-    for order in john.orders:
-        print(f"Order ID: {order.id}")
-        print(f"Order Date: {order.order_date}")
-        print()
 
 
 
-
-print("\n========== ORDER 1 PRODUCTS ==========")
-
-order = (
-    session.query(Order)
-    .options(
-        joinedload(Order.items)
-        .joinedload(OrderItem.product)
+@app.post("/trips", response_model=TripResponse)
+def create_trip(
+    trip_data: TripCreate,
+    session: Session = Depends(get_session)
+):
+    trip = Trip(
+        destination=trip_data.destination,
+        country=trip_data.country,
+        days=trip_data.days,
+        budget=trip_data.budget,
+        is_completed=trip_data.is_completed
     )
-    .filter(Order.id == order1.id)
-    .first()
-)
 
-if order:
-    print(f"Order ID: {order.id}")
+    session.add(trip)
+    session.commit()
+    session.refresh(trip)
 
-    for item in order.items:
-        print(f"Product: {item.product.name}")
-        print(f"Quantity: {item.quantity}")
-        print()
+    return trip
 
 
 
 
-print("\n========== NEW ORDER ==========")
+@app.get("/trips", response_model=list[TripResponse])
+def get_trips(
+    session: Session = Depends(get_session)
+):
+    statement = select(Trip)
 
-customer = (
-    session.query(Customer)
-    .filter(Customer.name == "Patrick")
-    .first()
-)
+    result = session.execute(statement)
 
-new_order = Order(
-    customer=customer
-)
+    trips = result.scalars().all()
 
-new_order.items = [
-    OrderItem(product=laptop, quantity=1),
-    OrderItem(product=keyboard, quantity=1),
-    OrderItem(product=headphones, quantity=2)
-]
-
-session.add(new_order)
-session.commit()
-
-print(f"New order created: {new_order.id}")
+    return trips
 
 
 
 
-print("\n========== UPDATE PRODUCT ==========")
+@app.get("/trips/{trip_id}", response_model=TripResponse)
+def get_trip(
+    trip_id: int,
+    session: Session = Depends(get_session)
+):
+    statement = select(Trip).where(
+        Trip.id == trip_id
+    )
 
-laptop = (
-    session.query(Product)
-    .filter(Product.name == "Laptop")
-    .first()
-)
+    result = session.execute(statement)
 
-if laptop:
-    print(f"Old price: {laptop.price}")
+    trip = result.scalar_one_or_none()
 
-    laptop.price = 1200
+    if trip is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Trip not found"
+        )
+
+    return trip
+
+
+
+
+@app.put("/trips/{trip_id}", response_model=TripResponse)
+def update_trip(
+    trip_id: int,
+    trip_data: TripCreate,
+    session: Session = Depends(get_session)
+):
+    statement = select(Trip).where(
+        Trip.id == trip_id
+    )
+
+    result = session.execute(statement)
+
+    trip = result.scalar_one_or_none()
+
+    if trip is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Trip not found"
+        )
+
+    trip.destination = trip_data.destination
+    trip.country = trip_data.country
+    trip.days = trip_data.days
+    trip.budget = trip_data.budget
+    trip.is_completed = trip_data.is_completed
 
     session.commit()
+    session.refresh(trip)
 
-    print(f"New price: {laptop.price}")
+    return trip
 
 
 
 
-session.close()
+@app.delete("/trips/{trip_id}")
+def delete_trip(
+    trip_id: int,
+    session: Session = Depends(get_session)
+):
+    statement = select(Trip).where(
+        Trip.id == trip_id
+    )
 
-print("\nSession closed.")
+    result = session.execute(statement)
+
+    trip = result.scalar_one_or_none()
+
+    if trip is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Trip not found"
+        )
+
+    session.delete(trip)
+    session.commit()
+
+    return {
+        "message": "Trip deleted successfully"
+    }
