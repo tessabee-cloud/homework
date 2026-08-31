@@ -14,7 +14,7 @@
                 "description": "test2",
                 "deadline": "none",
                 "priority": "none",
-                "status": "completed"
+                "status": "pending"
             }
         ]
     },
@@ -31,6 +31,30 @@
                 "deadline": "none",
                 "priority": "none",
                 "status": "pending"
+            }
+        ]
+    },
+    {
+        "name": "p3",
+        "tasks": [
+            {
+                "title": "t1",
+                "description": "test finall",
+                "deadline": "none",
+                "priority": "none",
+                "status": "pending"
+            }
+        ]
+    },
+    {
+        "name": "p4",
+        "tasks": [
+            {
+                "title": "t1",
+                "description": "test",
+                "deadline": "none",
+                "priority": "none",
+                "status": "completed"
             }
         ]
     }
