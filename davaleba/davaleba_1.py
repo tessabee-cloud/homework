@@ -22,3 +22,4 @@ print(24 > 0)
 print(24 < 0)
 print(24 == 0)
 print(24 % 2)
+
