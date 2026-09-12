@@ -1,5 +1,5 @@
 from storage import Storage
-from models_manager import FinanceManager
+from models.models_manager import FinanceManager
 
 storage = Storage()
 manager = FinanceManager(storage)
@@ -209,3 +209,12 @@ def export_csv():
     print(
         'Transactions exported to transactions.csv!'
     )
+
+
+
+#notifications
+#
+# notifications = manager.check_budget_notifications()
+#
+# for notification in notifications:
+#     print(notification)

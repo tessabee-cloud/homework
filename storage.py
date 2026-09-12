@@ -1,7 +1,7 @@
 import json
 import csv
 
-from models import Income, Expense, Budget
+from models.models import Income, Expense, Budget
 
 
 class Storage:
@@ -43,7 +43,8 @@ class Storage:
                     item["amount"],
                     item["category"],
                     item["date"],
-                    item["comment"]
+                    item["comment"],
+                    item.get("user_id")
                 )
             else:
                 transaction = Expense(
@@ -51,7 +52,8 @@ class Storage:
                     item["amount"],
                     item["category"],
                     item["date"],
-                    item["comment"]
+                    item["comment"],
+                    item.get("user_id")
                 )
 
             transactions.append(transaction)
@@ -61,7 +63,8 @@ class Storage:
         for item in data.get("budgets", []):
             budget = Budget(
                 item["category"],
-                item["limit"]
+                item["limit"],
+                item.get("user_id")
             )
 
             budgets[item["category"]] = budget
@@ -82,7 +85,8 @@ class Storage:
                 "amount",
                 "category",
                 "date",
-                "comment"
+                "comment",
+                "user_id"
             ]
 
             writer = csv.DictWriter(

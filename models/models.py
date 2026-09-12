@@ -2,12 +2,13 @@ from datetime import datetime
 
 
 class Transaction:
-    def __init__(self, transaction_id, amount, category, date, comment=""):
+    def __init__(self, transaction_id, amount, category, date, comment="",user_id=None):
         self.__id = transaction_id
         self.__amount = amount
         self.__category = category
         self.__date = date
         self.__comment = comment
+        self.__user_id = user_id
 
     @property
     def id(self):
@@ -29,24 +30,30 @@ class Transaction:
     def comment(self):
         return self.__comment
 
+    @property
+    def user_id(self):
+        return self.__user_id
+
     def to_dict(self):
         return {
             "id": self.__id,
             "amount": self.__amount,
             "category": self.__category,
             "date": self.__date,
-            "comment": self.__comment
+            "comment": self.__comment,
+            "user_id": self.__user_id
         }
 
 
 class Income(Transaction):
-    def __init__(self, transaction_id, amount, category, date, comment=""):
+    def __init__(self, transaction_id, amount, category, date, comment="",user_id=None):
         super().__init__(
             transaction_id,
             amount,
             category,
             date,
-            comment
+            comment,
+            user_id
         )
 
     @property
@@ -60,13 +67,14 @@ class Income(Transaction):
 
 
 class Expense(Transaction):
-    def __init__(self, transaction_id, amount, category, date, comment=""):
+    def __init__(self, transaction_id, amount, category, date, comment="",user_id=None):
         super().__init__(
             transaction_id,
             amount,
             category,
             date,
-            comment
+            comment,
+            user_id
         )
 
     @property
@@ -80,9 +88,10 @@ class Expense(Transaction):
 
 
 class Budget:
-    def __init__(self, category, limit):
+    def __init__(self, category, limit,user_id=None):
         self.__category = category
         self.__limit = limit
+        self.__user_id = user_id
 
     @property
     def category(self):
@@ -91,9 +100,13 @@ class Budget:
     @property
     def limit(self):
         return self.__limit
+    @property
+    def user_id(self):
+        return self.__user_id
 
     def to_dict(self):
         return {
             "category": self.__category,
-            "limit": self.__limit
+            "limit": self.__limit,
+            "user_id": self.__user_id
         }

@@ -1,7 +1,7 @@
 from datetime import datetime
 
 
-from models import Income, Expense, Budget
+from models.models import Income, Expense, Budget
 from decorators import validate_amount
 
 from exceptions import (
@@ -19,8 +19,59 @@ class FinanceManager:
         self.storage = storage
         self.transactions = []
         self.budgets = {}
+        # self.budgets_notifications = {}
 
         self.load_data()
+
+    # def check_budget_notifications(self):
+    #     notifications = []
+    #
+    #     for category, budgets in self.budgets.items():
+    #
+    #         spent = sum(
+    #             transaction.amount
+    #             for transaction in self.transactions
+    #             if transaction.type == 'expense'
+    #             and transaction.category.lower() == category.lower()
+    #         )
+    #
+    #         percentage = (spent / budgets.limit) * 100 if budgets.limit > 0 else 0
+    #
+    #         if percentage >= 100:
+    #             current_level = 100
+    #         elif percentage >= 90:
+    #             current_level = 90
+    #         elif percentage >= 70:
+    #             current_level = 70
+    #         elif percentage >= 50:
+    #             current_level = 50
+    #         else:
+    #             current_level = 0
+    #
+    #         previous_level = self.budgets_notifications.get(category, 0)
+    #
+    #         if current_level > previous_level:
+    #
+    #             if current_level >= 100:
+    #                 notifications.append(
+    #                     f'🚨{category}:you have exceeded your budget!'
+    #                 )
+    #             elif  current_level >= 90:
+    #                 notifications.append(
+    #                     f'🔴{category}:you have used 90% of your budget!'
+    #                 )
+    #             elif current_level >= 70:
+    #                 notifications.append(
+    #                     f'🟠{category}:you have used 70% of your budget!'
+    #                 )
+    #             elif current_level >= 50:
+    #                 notifications.append(
+    #                     f'🟡{category}:you have used 50% of your budget!
+    #                 )
+    #
+    #             self.budgets_notifications[category] = current_level
+    #
+    #         return notifications
 
     def load_data(self):
         self.transactions, self.budgets = self.storage.load_data()
@@ -47,10 +98,32 @@ class FinanceManager:
         transaction_type,
         category,
         date,
-        comment=""
+        comment="",
+        user_id=None
     ):
 
         transaction_type = transaction_type.lower()
+
+        transaction_id = self.get_next_id()
+
+        if transaction_type == "income":
+            transaction = Income(
+                transaction_id,
+                amount,
+                category,
+                date,
+                comment,
+                user_id
+            )
+        else:
+            transaction = Expense(
+                transaction_id,
+                amount,
+                category,
+                date,
+                comment,
+                user_id
+            )
 
         if transaction_type not in ["income", "expense"]:
             raise InvalidTransactionTypeError(
@@ -72,7 +145,8 @@ class FinanceManager:
                 amount,
                 category,
                 date,
-                comment
+                comment,
+                user_id
             )
         else:
             transaction = Expense(
@@ -80,7 +154,8 @@ class FinanceManager:
                 amount,
                 category,
                 date,
-                comment
+                comment,
+                user_id
             )
 
         self.transactions.append(transaction)
@@ -150,8 +225,8 @@ class FinanceManager:
 
 
 
-    @validate_amount
-    def set_budget(self, category, limit):
+    @validate_amount('limit')
+    def set_budget(self, category, limit,user_id=None):
         category = category.strip()
 
         if not category:
@@ -161,7 +236,8 @@ class FinanceManager:
 
         budget = Budget(
             category,
-            limit
+            limit,
+            user_id
         )
 
         self.budgets[category] = budget
@@ -220,7 +296,7 @@ class FinanceManager:
 
         return transactions, income, expenses, balance
 
-    def get_budget_status(self, transactions=None):
+    def get_budget_status(self, transactions=None,user_id=None):
         if transactions is None:
             transactions = self.transactions
 
@@ -238,6 +314,8 @@ class FinanceManager:
         status = []
 
         for category, budget in self.budgets.items():
+            if user_id is not None and budget.user_id != user_id:
+                continue
             spent = expenses_by_category.get(
                 category,
                 0
