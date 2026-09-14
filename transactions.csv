@@ -1,0 +1,7 @@
+id,type,amount,category,date,comment
+1,income,3000.0,salary,2026-09-06,slr
+3,expense,1200.0,rent,2026-09-06,sept rent
+4,income,500.0,streaming,2026-08-15,kisa
+5,income,350.0,streaming,2026-08-11,kisa
+6,income,265.0,streaming,2026-07-29,tiktok
+7,expense,450.0,food,2026-08-30,groceries
